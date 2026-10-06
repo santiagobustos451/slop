@@ -140,13 +140,13 @@ const BAR = `<div class="bar"><span style="background:#E4423D"></span><span styl
 const COLORS = ['sage','brick','mustard'];
 
 const DEFAULT_LISTS = {
-  flyer:['Arreglos de pared con enduido incluidos','Presupuesto sin cargo','Cobertura en toda Córdoba Capital'],
-  story:['Enduido incluido','Presupuesto sin cargo'],
-  post:['Enduido incluido','Presupuesto sin cargo']
+  flyer:['Presupuesto sin cargo','Cobertura en toda Córdoba Capital'],
+  story:['Presupuesto sin cargo'],
+  post:['Presupuesto sin cargo']
 };
 let lists = JSON.parse(JSON.stringify(DEFAULT_LISTS));
-try{ const s = localStorage.getItem('pms_lists'); if(s) lists = Object.assign(lists, JSON.parse(s)); }catch(e){}
-const saveLists = ()=>{ try{ localStorage.setItem('pms_lists', JSON.stringify(lists)); }catch(e){} };
+try{ const s = localStorage.getItem('pms2_lists'); if(s) lists = Object.assign(lists, JSON.parse(s)); }catch(e){}
+const saveLists = ()=>{ try{ localStorage.setItem('pms2_lists', JSON.stringify(lists)); }catch(e){} };
 
 function listHTML(key, withDots=true){
   const items = lists[key].map((t,i)=>
@@ -161,8 +161,8 @@ flyer:()=>`<div class="art" id="tpl-flyer">
   <div class="body panel-paper">${listHTML('flyer')}</div>
   <div class="cta ink-block">
     <div class="lead">Escribinos y coordinamos</div>
-    <div class="val" ${E} data-k="flyer-c1">+54 3492 32-2505</div>
-    <div class="val" ${E} data-k="flyer-c2">@pinturams</div>
+    <div class="val" ${E} data-k="flyer-c1">+54 351 752 3896</div>
+    <div class="val" ${E} data-k="flyer-c2">@pinturams.cordoba</div>
   </div>
 </div>`,
 story:()=>`<div class="art" id="tpl-story">
@@ -172,8 +172,8 @@ story:()=>`<div class="art" id="tpl-story">
     ${listHTML('story', false)}
   </div>
   <div class="cta ink-block">
-    <div class="val" ${E} data-k="story-c1">+54 3492 32-2505</div>
-    <div class="val" ${E} data-k="story-c2">@pinturams</div>
+    <div class="val" ${E} data-k="story-c1">+54 351 752 3896</div>
+    <div class="val" ${E} data-k="story-c2">@pinturams.cordoba</div>
   </div>
 </div>`,
 post:()=>`<div class="art" id="tpl-post">
@@ -184,16 +184,16 @@ post:()=>`<div class="art" id="tpl-post">
     ${listHTML('post')}
   </div>
   <div class="cta ink-block">
-    <div class="val" ${E} data-k="post-c1">+54 3492 32-2505</div>
-    <div class="val" ${E} data-k="post-c2">@pinturams</div>
+    <div class="val" ${E} data-k="post-c1">+54 351 752 3896</div>
+    <div class="val" ${E} data-k="post-c2">@pinturams.cordoba</div>
   </div>
 </div>`,
 card:()=>`<div class="art panel" id="tpl-card">
   ${BAR}
   <div>${LOGO}<div class="tag" ${E} data-k="card-tag">Pintura de departamentos</div></div>
   <div>
-    <div class="val" ${E} data-k="card-c1">+54 3492 32-2505</div>
-    <div class="val" ${E} data-k="card-c2">@pinturams</div>
+    <div class="val" ${E} data-k="card-c1">+54 351 752 3896</div>
+    <div class="val" ${E} data-k="card-c2">@pinturams.cordoba</div>
   </div>
 </div>`
 };
@@ -205,14 +205,14 @@ function render(t){
   current = t || current;
   stage.innerHTML = TPL[current]();
   stage.querySelectorAll('[data-k]').forEach(el=>{
-    try{ const v = localStorage.getItem('pms_'+el.dataset.k); if(v) el.innerText = v; }catch(e){}
+    try{ const v = localStorage.getItem('pms2_'+el.dataset.k); if(v) el.innerText = v; }catch(e){}
   });
   applyBg(); applyBar();
 }
 
 stage.addEventListener('input', e=>{
   const el = e.target;
-  if(el.dataset.k){ try{ localStorage.setItem('pms_'+el.dataset.k, el.innerText); }catch(err){} }
+  if(el.dataset.k){ try{ localStorage.setItem('pms2_'+el.dataset.k, el.innerText); }catch(err){} }
   if(el.dataset.li){ const [k,i] = el.dataset.li.split(':'); lists[k][+i] = el.innerText; saveLists(); }
 });
 stage.addEventListener('keydown', e=>{
