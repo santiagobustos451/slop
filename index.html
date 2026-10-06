@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>pinturams · editor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,800&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  :root{
+    --plaster:237,234,228; --paper:251,250,247; --ink:35,38,43;
+    --sage:#6E8F72; --brick:#B5563C; --mustard:#D9A441;
+    --chrome-bg:#f3f1ec; --chrome-ink:#23262B; --chrome-line:#ddd9cf; --chrome-panel:#fff;
+    box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --chrome-bg:#1c1b18; --chrome-ink:#f1efe9; --chrome-line:#3a382f; --chrome-panel:#262420; }
+  }
+  :root[data-theme="dark"]{ --chrome-bg:#1c1b18; --chrome-ink:#f1efe9; --chrome-line:#3a382f; --chrome-panel:#262420; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--chrome-bg);color:var(--chrome-ink);font-family:'Work Sans',Arial,sans-serif;min-height:100%;}
+  .wrap{display:flex;flex-wrap:wrap;gap:24px;padding:24px;max-width:1100px;margin:0 auto;}
+  .panel-ctrl{background:var(--chrome-panel);border:1px solid var(--chrome-line);border-radius:10px;padding:18px;width:220px;flex:none;}
+  h1{font-family:'Fraunces',Georgia,serif;font-size:19px;margin:0 0 4px;}
+  .hint{font-size:12px;opacity:.65;margin:0 0 18px;line-height:1.4;}
+  .group{margin-bottom:18px;}
+  .group label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;opacity:.6;margin-bottom:6px;}
+  .group label.chk{text-transform:none;letter-spacing:0;opacity:1;font-size:13px;display:flex;align-items:center;gap:8px;}
+  .tbtn{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:7px;border:1px solid transparent;background:none;color:inherit;font-size:14px;cursor:pointer;margin-bottom:4px;font-family:inherit;}
+  .tbtn.active{background:var(--brick);color:#fff;}
+  select{width:100%;padding:7px 8px;border-radius:7px;border:1px solid var(--chrome-line);background:var(--chrome-panel);color:inherit;font-family:inherit;font-size:14px;}
+  .dl{width:100%;padding:11px;border:none;border-radius:7px;background:var(--chrome-ink);color:var(--chrome-bg);font-weight:600;font-size:14px;cursor:pointer;font-family:inherit;}
+  .stage{flex:1;min-width:280px;display:flex;align-items:flex-start;justify-content:center;padding:28px 20px;border-radius:10px;border:1px solid var(--chrome-line);
+    background-color:var(--chrome-panel);
+    background-image:linear-gradient(45deg,#8883 25%,transparent 25%,transparent 75%,#8883 75%),linear-gradient(45deg,#8883 25%,transparent 25%,transparent 75%,#8883 75%);
+    background-size:20px 20px;background-position:0 0,10px 10px;}
+
+  /* ---- brand art ---- */
+  .art{position:relative;font-family:'Work Sans',Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 50px -20px rgba(0,0,0,.45);}
+  .art,.art *{color:rgb(var(--ink));}
+  .panel{background:rgba(var(--plaster),var(--op,1));}
+  .panel-paper{background:rgba(var(--paper),var(--op,1));}
+  .ink-block{background:rgba(var(--ink),var(--op,1));}
+  .ink-block,.ink-block *{color:rgb(var(--paper));}
+  [contenteditable]{outline:none;}
+  [contenteditable]:focus{box-shadow:0 0 0 2px var(--mustard);border-radius:3px;}
+  .logo{display:flex;align-items:center;gap:8px;}
+  .chip{flex:none;width:30px;height:30px;background:var(--brick);border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:13px;transform:rotate(-4deg);}
+  .art .chip{color:rgb(var(--paper));}
+  .word{font-family:'Fraunces',Georgia,serif;font-weight:700;font-size:18px;}
+  .art .word b{color:var(--brick);}
+  .headline{font-family:'Fraunces',Georgia,serif;font-weight:700;letter-spacing:-.01em;}
+  .dot{flex:none;width:13px;height:13px;border-radius:3px;margin-top:4px;}
+  .dot.sage{background:var(--sage);} .dot.brick{background:var(--brick);} .dot.mustard{background:var(--mustard);}
+  .list{display:grid;gap:12px;}
+  .pt{display:flex;gap:10px;align-items:flex-start;font-weight:600;line-height:1.35;}
+  .pt .tx{flex:1;}
+  .x{flex:none;width:18px;height:18px;border-radius:50%;border:none;background:rgba(0,0,0,.12);font-size:12px;line-height:1;cursor:pointer;padding:0;margin-top:1px;opacity:.5;}
+  .x:hover{opacity:1;background:var(--brick);color:#fff!important;}
+  .add{margin-top:10px;align-self:flex-start;border:1px dashed rgba(0,0,0,.35);background:none;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
+
+  .bar{display:flex;height:7px;flex:none;}
+  .bar span{flex:1;}
+
+  /* flyer */
+  #tpl-flyer{width:360px;min-height:504px;}
+  #tpl-flyer .hero{padding:28px 28px 26px;}
+  #tpl-flyer .headline{font-size:32px;line-height:1.05;margin-top:22px;}
+  #tpl-flyer .body{flex:1;padding:24px 28px;display:flex;flex-direction:column;font-size:14px;}
+  #tpl-flyer .cta{padding:22px 28px 26px;display:grid;gap:4px;}
+  #tpl-flyer .lead{font-family:'Fraunces',Georgia,serif;font-size:14px;opacity:.75;margin-bottom:8px;}
+  #tpl-flyer .val{font-size:17px;font-weight:700;}
+
+  /* story */
+  #tpl-story{width:270px;min-height:480px;}
+  #tpl-story .hero{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:36px 26px;gap:22px;}
+  #tpl-story .headline{font-size:30px;line-height:1.08;}
+  #tpl-story .list{width:100%;}
+  #tpl-story .pt{font-size:13px;justify-content:center;}
+  #tpl-story .pt .tx{flex:none;}
+  #tpl-story .add{align-self:center;}
+  #tpl-story .cta{padding:24px 20px 28px;text-align:center;display:grid;gap:4px;}
+  #tpl-story .val{font-size:16px;font-weight:700;}
+
+  /* post */
+  #tpl-post{width:340px;min-height:340px;}
+  #tpl-post .hero{padding:20px 26px 20px;}
+  #tpl-post .headline{font-size:28px;line-height:1.05;margin-top:14px;}
+  #tpl-post .body{flex:1;padding:18px 26px 20px;display:flex;flex-direction:column;}
+  #tpl-post .lead{font-size:13px;line-height:1.5;margin:0 0 16px;}
+  #tpl-post .pt{font-size:13px;}
+  #tpl-post .cta{padding:16px 26px 18px;display:grid;gap:2px;}
+  #tpl-post .val{font-size:14px;font-weight:700;}
+
+  /* card */
+  #tpl-card{width:350px;height:200px;padding:29px 24px 22px;justify-content:space-between;}
+  #tpl-card .bar{position:absolute;top:0;left:0;right:0;}
+  #tpl-card .tag{font-size:12px;opacity:.7;font-weight:500;margin-top:4px;}
+  #tpl-card .val{font-size:13px;font-weight:600;line-height:1.55;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel-ctrl">
+    <h1>pinturams</h1>
+    <p class="hint">Hacé click en el texto para editarlo. Usá × y “+ Agregar ítem” para ajustar las listas.</p>
+
+    <div class="group">
+      <label>Diseño</label>
+      <button class="tbtn active" data-t="flyer">Folleto</button>
+      <button class="tbtn" data-t="story">Historia IG</button>
+      <button class="tbtn" data-t="post">Post cuadrado</button>
+      <button class="tbtn" data-t="card">Tarjeta</button>
+    </div>
+
+    <div class="group">
+      <label>Fondo</label>
+      <select id="bgMode">
+        <option value="solid">Sólido</option>
+        <option value="semi">Semitransparente</option>
+        <option value="trans">Transparente</option>
+      </select>
+    </div>
+
+    <div class="group" id="barGroup">
+      <label class="chk"><input type="checkbox" id="barToggle" checked> Franja de color</label>
+    </div>
+
+    <button class="dl" id="dl">Descargar PNG</button>
+  </div>
+
+  <div class="stage"><div id="stageInner"></div></div>
+</div>
+
+<script>
+const LOGO = `<div class="logo"><div class="chip">ms</div><div class="word">pintura<b>ms</b></div></div>`;
+const E = 'contenteditable="true" spellcheck="false"';
+const BAR = `<div class="bar"><span style="background:#E4423D"></span><span style="background:#EF8B2C"></span><span style="background:#D9A441"></span><span style="background:#6E8F72"></span><span style="background:#3D6FA8"></span><span style="background:#7A5AA8"></span></div>`;
+const COLORS = ['sage','brick','mustard'];
+
+const DEFAULT_LISTS = {
+  flyer:['Arreglos de pared con enduido incluidos','Presupuesto sin cargo','Cobertura en toda Córdoba Capital'],
+  story:['Enduido incluido','Presupuesto sin cargo'],
+  post:['Enduido incluido','Presupuesto sin cargo']
+};
+let lists = JSON.parse(JSON.stringify(DEFAULT_LISTS));
+try{ const s = localStorage.getItem('pms_lists'); if(s) lists = Object.assign(lists, JSON.parse(s)); }catch(e){}
+const saveLists = ()=>{ try{ localStorage.setItem('pms_lists', JSON.stringify(lists)); }catch(e){} };
+
+function listHTML(key, withDots=true){
+  const items = lists[key].map((t,i)=>
+    `<div class="pt">${withDots?`<span class="dot ${COLORS[i%3]}"></span>`:''}<span class="tx" ${E} data-li="${key}:${i}">${t.replace(/</g,'&lt;')}</span><button class="x" data-html2canvas-ignore="true" data-rm="${key}:${i}" title="Quitar">×</button></div>`).join('');
+  return `<div class="list">${items}</div><button class="add" data-html2canvas-ignore="true" data-add="${key}">+ Agregar ítem</button>`;
+}
+
+const TPL = {
+flyer:()=>`<div class="art" id="tpl-flyer">
+  ${BAR}
+  <div class="hero panel">${LOGO}<div class="headline" ${E} data-k="flyer-h">Pintamos tu depto</div></div>
+  <div class="body panel-paper">${listHTML('flyer')}</div>
+  <div class="cta ink-block">
+    <div class="lead">Escribinos y coordinamos</div>
+    <div class="val" ${E} data-k="flyer-c1">+54 3492 32-2505</div>
+    <div class="val" ${E} data-k="flyer-c2">@pinturams</div>
+  </div>
+</div>`,
+story:()=>`<div class="art" id="tpl-story">
+  ${BAR}
+  <div class="hero panel">${LOGO}
+    <div class="headline" ${E} data-k="story-h">Pintamos tu depto para la mudanza</div>
+    ${listHTML('story', false)}
+  </div>
+  <div class="cta ink-block">
+    <div class="val" ${E} data-k="story-c1">+54 3492 32-2505</div>
+    <div class="val" ${E} data-k="story-c2">@pinturams</div>
+  </div>
+</div>`,
+post:()=>`<div class="art" id="tpl-post">
+  ${BAR}
+  <div class="hero panel">${LOGO}<div class="headline" ${E} data-k="post-h">Pintamos tu depto</div></div>
+  <div class="body panel-paper">
+    <p class="lead" ${E} data-k="post-sub">Pintura de departamentos en Córdoba. Si conocés a alguien que necesita pintar, nos ayuda que nos tengan en cuenta.</p>
+    ${listHTML('post')}
+  </div>
+  <div class="cta ink-block">
+    <div class="val" ${E} data-k="post-c1">+54 3492 32-2505</div>
+    <div class="val" ${E} data-k="post-c2">@pinturams</div>
+  </div>
+</div>`,
+card:()=>`<div class="art panel" id="tpl-card">
+  ${BAR}
+  <div>${LOGO}<div class="tag" ${E} data-k="card-tag">Pintura de departamentos</div></div>
+  <div>
+    <div class="val" ${E} data-k="card-c1">+54 3492 32-2505</div>
+    <div class="val" ${E} data-k="card-c2">@pinturams</div>
+  </div>
+</div>`
+};
+
+let current = 'flyer';
+const stage = document.getElementById('stageInner');
+
+function render(t){
+  current = t || current;
+  stage.innerHTML = TPL[current]();
+  stage.querySelectorAll('[data-k]').forEach(el=>{
+    try{ const v = localStorage.getItem('pms_'+el.dataset.k); if(v) el.innerText = v; }catch(e){}
+  });
+  applyBg(); applyBar();
+}
+
+stage.addEventListener('input', e=>{
+  const el = e.target;
+  if(el.dataset.k){ try{ localStorage.setItem('pms_'+el.dataset.k, el.innerText); }catch(err){} }
+  if(el.dataset.li){ const [k,i] = el.dataset.li.split(':'); lists[k][+i] = el.innerText; saveLists(); }
+});
+stage.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && e.target.isContentEditable && !e.target.classList.contains('lead')){ e.preventDefault(); e.target.blur(); }
+});
+stage.addEventListener('click', e=>{
+  const rm = e.target.closest('[data-rm]'), add = e.target.closest('[data-add]');
+  if(rm){ const [k,i] = rm.dataset.rm.split(':'); lists[k].splice(+i,1); saveLists(); render(); }
+  if(add){ lists[add.dataset.add].push('Nuevo ítem'); saveLists(); render(); }
+});
+
+function applyBg(){
+  const m = document.getElementById('bgMode').value;
+  const art = stage.querySelector('.art');
+  if(art) art.style.setProperty('--op', m==='solid'?1:m==='semi'?0.55:0);
+}
+function applyBar(){
+  const bar = stage.querySelector('.bar');
+  if(bar) bar.style.display = document.getElementById('barToggle').checked ? 'flex' : 'none';
+}
+
+document.querySelectorAll('.tbtn').forEach(b=>b.addEventListener('click', ()=>{
+  document.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); render(b.dataset.t);
+}));
+document.getElementById('bgMode').addEventListener('change', applyBg);
+document.getElementById('barToggle').addEventListener('change', applyBar);
+
+document.getElementById('dl').addEventListener('click', async ()=>{
+  const art = stage.querySelector('.art'); if(!art) return;
+  try{ document.activeElement.blur(); await document.fonts.ready; }catch(e){}
+  const canvas = await html2canvas(art, {backgroundColor:null, scale:3});
+  const a = document.createElement('a');
+  a.download = `pinturams-${current}.png`;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+});
+
+render('flyer');
+</script>
+</body>
+</html>
